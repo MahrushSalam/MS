@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Gesture Music AI</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+
+<style>
+body {
+    margin:0;
+    font-family:sans-serif;
+    background:#121212;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+#app {
+    width:320px;
+    text-align:center;
+}
+
+img {
+    width:100%;
+    border-radius:15px;
+}
+
+.title { margin-top:10px; font-size:1.2rem; }
+
+.progress {
+    width:100%;
+    height:6px;
+    background:#333;
+    margin-top:10px;
+    cursor:pointer;
+}
+.bar {
+    height:100%;
+    width:0%;
+    background:#00ff88;
+}
+
+button {
+    margin:5px;
+    padding:8px;
+    border:none;
+    border-radius:8px;
+    background:#333;
+    color:white;
+}
+.active {
+    background:#00ff88;
+    color:black;
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+    <img id="cover">
+    <div class="title" id="title">Loading...</div>
+
+    <div class="progress" id="progress">
+        <div class="bar" id="bar"></div>
+    </div>
+
+    <div>
+        <button id="shuffle">🔀</button>
+        <button id="repeat">🔁</button>
+        <button id="voice">🎤</button>
+        <button onclick="recommend()">🤖</button>
+    </div>
+
+    <div id="status">Ready</div>
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+const audio = document.getElementById("audio");
+const title = document.getElementById("title");
+const cover = document.getElementById("cover");
+const bar = document.getElementById("bar");
+const progress = document.getElementById("progress");
+const status = document.getElementById("status");
+
+let playlist = [];
+let index = 0;
+let shuffle = false;
+let repeat = false;
+
+/* ================= API ================= */
+function fetchSongs(query="pop"){
+    status.innerText = "🌐 Cari: " + query;
+
+    return new Promise(resolve=>{
+        window.cb = function(data){
+            playlist = data.data.slice(0,5).map(song=>({
+                title: song.title,
+                src: song.preview,
+                cover: song.album.cover_medium
+            }));
+
+            index = 0;
+            loadSong();
+            resolve();
+        };
+
+        const script = document.createElement("script");
+        script.src = `https://api.deezer.com/search?q=${query}&output=jsonp&callback=cb`;
+        document.body.appendChild(script);
+    });
+}
+
+/* ================= MODE ================= */
+function loadTenxi(){
+    fetchSongs("tenxi");
+}
+
+function loadJpop(){
+    fetchSongs("heiakim lowmana jpop");
+}
+
+/* ================= LOAD ================= */
+function loadSong(){
+    let song = playlist[index];
+    if(!song) return;
+
+    audio.src = song.src;
+    title.innerText = song.title;
+    cover.src = song.cover;
+
+    localStorage.setItem("lastSong", index);
+}
+
+/* ================= CONTROL ================= */
+function togglePlay(){
+    if(audio.paused){
+        audio.play();
+        status.innerText = "▶️ Playing";
+    } else {
+        audio.pause();
+        status.innerText = "⏸ Paused";
+    }
+}
+
+function next(){
+    if(shuffle){
+        index = Math.floor(Math.random()*playlist.length);
+    } else {
+        index = (index+1)%playlist.length;
+    }
+    loadSong();
+    audio.play();
+}
+
+function prev(){
+    index = (index-1+playlist.length)%playlist.length;
+    loadSong();
+    audio.play();
+}
+
+/* ================= AI ================= */
+function recommend(){
+    let current = playlist[index]?.title || "pop";
+    status.innerText = "🤖 Rekomendasi: " + current;
+    fetchSongs(current);
+}
+
+/* ================= PROGRESS ================= */
+audio.addEventListener("timeupdate", ()=>{
+    let percent = (audio.currentTime/audio.duration)*100;
+    bar.style.width = percent + "%";
+});
+
+progress.onclick = (e)=>{
+    let rect = progress.getBoundingClientRect();
+    let percent = (e.clientX-rect.left)/rect.width;
+    audio.currentTime = percent * audio.duration;
+};
+
+/* ================= AUTO NEXT ================= */
+audio.addEventListener("ended", ()=>{
+    if(repeat){
+        audio.currentTime = 0;
+        audio.play();
+    } else {
+        next();
+    }
+});
+
+/* ================= BUTTON ================= */
+document.getElementById("shuffle").onclick = ()=>{
+    shuffle=!shuffle;
+};
+document.getElementById("repeat").onclick = ()=>{
+    repeat=!repeat;
+};
+
+/* ================= HAMMER ================= */
+const mc = new Hammer(document.body);
+mc.get('swipe').set({ direction: Hammer.DIRECTION_ALL });
+mc.get('pinch').set({ enable:true });
+mc.get('tap').set({ taps:2 });
+mc.get('press').set({ time:500 });
+
+mc.on("tap", togglePlay);
+mc.on("swipeleft", next);
+mc.on("swiperight", prev);
+
+mc.on("swipeup", ()=>{
+    status.innerText = "🎧 Mode TENXI";
+    loadTenxi();
+});
+
+mc.on("swipedown", ()=>{
+    status.innerText = "🇯🇵 Mode JPOP";
+    loadJpop();
+});
+
+mc.on("pinch", (ev)=>{
+    let vol = audio.volume + (ev.scale-1)*0.1;
+    audio.volume = Math.min(1, Math.max(0, vol));
+    status.innerText = "🔊 Volume: "+Math.round(audio.volume*100)+"%";
+});
+
+mc.on("press", recommend);
+
+/* ================= VOICE ================= */
+document.getElementById("voice").onclick = ()=>{
+    if(!('webkitSpeechRecognition' in window)){
+        alert("Voice tidak didukung");
+        return;
+    }
+
+    let rec = new webkitSpeechRecognition();
+    rec.lang = "en-US";
+    rec.start();
+
+    status.innerText = "🎤 Listening...";
+
+    rec.onresult = (e)=>{
+        let cmd = e.results[0][0].transcript.toLowerCase();
+        status.innerText = cmd;
+
+        if(cmd.includes("play")) audio.play();
+        if(cmd.includes("pause")) audio.pause();
+        if(cmd.includes("next")) next();
+        if(cmd.includes("back")) prev();
+        if(cmd.includes("recommend")) recommend();
+
+        if(cmd.includes("tenxi")) loadTenxi();
+        if(cmd.includes("jpop") || cmd.includes("anime")) loadJpop();
+    };
+};
+
+/* ================= START ================= */
+async function start(){
+    await fetchSongs("tenxi");
+
+    if(playlist.length === 0){
+        status.innerText = "⚠️ Tenxi tidak ada → pakai jpop";
+        await fetchSongs("jpop");
+    }
+}
+start();
+</script>
+
+</body>
+</html>
