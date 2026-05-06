@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inovasi IMK: Smart Gesture</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <script src="https://cloudflare.com"></script>
+    <style>
+        body { margin: 0; font-family: sans-serif; background: #121212; color: white; overflow: hidden; }
+        #touch-area { 
+            width: 100vw; height: 100vh; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 5px solid #333; box-sizing: border-box; transition: all 0.3s;
+        }
+        .status { font-size: 1.2rem; color: #aaa; margin-bottom: 20px; }
+        .action-label { font-size: 2rem; font-weight: bold; text-align: center; text-transform: uppercase; }
+        .hint { position: absolute; bottom: 20px; font-size: 0.8rem; color: #666; }
+        /* Animasi saat gestur terdeteksi */
+        .pulse { background: #1a1a1a; border-color: #00ff88 !important; }
+    </style>
+</head>
+<body>
+
+    <div id="touch-area">
+        <div class="status">Sistem Mendeteksi:</div>
+        <div id="action" class="action-label">Menunggu Sentuhan...</div>
+        
+        <div class="hint">
+            Coba: Swipe Kiri/Kanan | Tap 2x | Tekan Lama (Press)
+        </div>
+    </div>
+
+    <script>
+        const area = document.getElementById('touch-area');
+        const label = document.getElementById('action');
+        
+        // Inisialisasi Hammer.js pada area sentuh
+        const mc = new Hammer(area);
+
+        // Aktifkan deteksi Press dan Double Tap
+        mc.get('press').set({ time: 500 });
+        mc.get('tap').set({ taps: 2 });
+
+        // 1. Deteksi SWIPE (Geser Cepat)
+        mc.on("swipeleft swiperight", function(ev) {
+            label.innerText = ev.type === "swipeleft" ? "⬅️ Navigasi: Back" : "➡️ Navigasi: Forward";
+            triggerVisual();
+        });
+
+        // 2. Deteksi DOUBLE TAP (Ketuk 2x)
+        mc.on("tap", function(ev) {
+            label.innerText = "⭐ Aksi: Tandai Favorit";
+            triggerVisual();
+        });
+
+        // 3. Deteksi PRESS (Tekan Lama)
+        mc.on("press", function(ev) {
+            label.innerText = "📱 Munculkan: Menu Rahasia";
+            triggerVisual();
+        });
+
+        // Fungsi pemanis visual saat aksi terjadi
+        function triggerVisual() {
+            area.classList.add('pulse');
+            setTimeout(() => area.classList.remove('pulse'), 300);
+        }
+    </script>
+</body>
+</html>
