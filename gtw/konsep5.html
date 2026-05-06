@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Gesture Music App</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+
+<style>
+body {
+    margin:0;
+    font-family:sans-serif;
+    background:#121212;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+#app {
+    width:300px;
+    text-align:center;
+}
+
+img {
+    width:100%;
+    border-radius:15px;
+}
+
+.title { margin-top:10px; font-size:1.2rem; }
+.controls { margin-top:10px; }
+
+.progress {
+    width:100%;
+    height:5px;
+    background:#333;
+    margin-top:10px;
+    position:relative;
+    cursor:pointer;
+}
+
+.progress-bar {
+    height:100%;
+    width:0%;
+    background:#00ff88;
+}
+
+button {
+    margin:5px;
+    padding:8px;
+    border:none;
+    border-radius:8px;
+    background:#333;
+    color:white;
+}
+
+.active {
+    background:#00ff88;
+    color:black;
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+    <img id="cover" src="">
+    <div class="title" id="title">-</div>
+
+    <div class="progress" id="progress">
+        <div class="progress-bar" id="bar"></div>
+    </div>
+
+    <div class="controls">
+        <button id="shuffle">🔀</button>
+        <button id="repeat">🔁</button>
+        <button id="voice">🎤</button>
+    </div>
+
+    <div id="status">Ready</div>
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+const audio = document.getElementById("audio");
+const title = document.getElementById("title");
+const cover = document.getElementById("cover");
+const bar = document.getElementById("bar");
+const progress = document.getElementById("progress");
+const status = document.getElementById("status");
+
+const shuffleBtn = document.getElementById("shuffle");
+const repeatBtn = document.getElementById("repeat");
+
+let playlist = [
+{
+    title:"Song 1",
+    src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    cover:"https://picsum.photos/300?1"
+},
+{
+    title:"Song 2",
+    src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    cover:"https://picsum.photos/300?2"
+}
+];
+
+let index = localStorage.getItem("lastIndex") || 0;
+let shuffle = false;
+let repeat = false;
+
+/* LOAD SONG */
+function loadSong(){
+    let song = playlist[index];
+    audio.src = song.src;
+    title.innerText = song.title;
+    cover.src = song.cover;
+    localStorage.setItem("lastIndex", index);
+}
+
+loadSong();
+
+/* PLAY / PAUSE */
+function togglePlay(){
+    if(audio.paused){
+        audio.play();
+        status.innerText = "▶️ Playing";
+    } else {
+        audio.pause();
+        status.innerText = "⏸ Paused";
+    }
+}
+
+/* NEXT / PREV */
+function next(){
+    if(shuffle){
+        index = Math.floor(Math.random()*playlist.length);
+    } else {
+        index = (index+1)%playlist.length;
+    }
+    loadSong();
+    audio.play();
+}
+
+function prev(){
+    index = (index-1+playlist.length)%playlist.length;
+    loadSong();
+    audio.play();
+}
+
+/* PROGRESS BAR */
+audio.addEventListener("timeupdate", ()=>{
+    let percent = (audio.currentTime / audio.duration)*100;
+    bar.style.width = percent + "%";
+});
+
+progress.addEventListener("click", (e)=>{
+    let rect = progress.getBoundingClientRect();
+    let percent = (e.clientX - rect.left)/rect.width;
+    audio.currentTime = percent * audio.duration;
+});
+
+/* AUTO NEXT */
+audio.addEventListener("ended", ()=>{
+    if(repeat){
+        audio.currentTime = 0;
+        audio.play();
+    } else {
+        next();
+    }
+});
+
+/* SHUFFLE */
+shuffleBtn.onclick = ()=>{
+    shuffle = !shuffle;
+    shuffleBtn.classList.toggle("active");
+};
+
+/* REPEAT */
+repeatBtn.onclick = ()=>{
+    repeat = !repeat;
+    repeatBtn.classList.toggle("active");
+};
+
+/* HAMMER */
+const mc = new Hammer(document.body);
+mc.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL });
+mc.get('pinch').set({ enable:true });
+mc.get('tap').set({ taps:2 });
+
+mc.on("tap", togglePlay);
+mc.on("swipeleft", next);
+mc.on("swiperight", prev);
+
+mc.on("pinch", (ev)=>{
+    let vol = audio.volume + (ev.scale-1)*0.1;
+    audio.volume = Math.min(1, Math.max(0, vol));
+    status.innerText = "🔊 Volume: "+Math.round(audio.volume*100)+"%";
+});
+
+/* VOICE CONTROL */
+let recognition;
+
+document.getElementById("voice").onclick = ()=>{
+    if(!('webkitSpeechRecognition' in window)){
+        alert("Voice tidak didukung browser");
+        return;
+    }
+
+    recognition = new webkitSpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.start();
+
+    status.innerText = "🎤 Listening...";
+
+    recognition.onresult = (event)=>{
+        let cmd = event.results[0][0].transcript.toLowerCase();
+        status.innerText = "You said: " + cmd;
+
+        if(cmd.includes("play")) audio.play();
+        if(cmd.includes("pause")) audio.pause();
+        if(cmd.includes("next")) next();
+        if(cmd.includes("back")) prev();
+        if(cmd.includes("volume up")) audio.volume = Math.min(1, audio.volume+0.1);
+        if(cmd.includes("volume down")) audio.volume = Math.max(0, audio.volume-0.1);
+    };
+};
+</script>
+
+</body>
+</html>
