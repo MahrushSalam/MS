@@ -17,19 +17,15 @@ body {
     align-items:center;
     height:100vh;
 }
-
 #app {
     width:320px;
     text-align:center;
 }
-
 img {
     width:100%;
     border-radius:15px;
 }
-
 .title { margin-top:10px; font-size:1.2rem; }
-
 .progress {
     width:100%;
     height:6px;
@@ -42,7 +38,6 @@ img {
     width:0%;
     background:#00ff88;
 }
-
 button {
     margin:5px;
     padding:8px;
@@ -50,10 +45,6 @@ button {
     border-radius:8px;
     background:#333;
     color:white;
-}
-.active {
-    background:#00ff88;
-    color:black;
 }
 </style>
 </head>
@@ -93,7 +84,7 @@ let index = 0;
 let shuffle = false;
 let repeat = false;
 
-/* ================= API ================= */
+/* API */
 function fetchSongs(query="pop"){
     status.innerText = "🌐 Cari: " + query;
 
@@ -104,7 +95,6 @@ function fetchSongs(query="pop"){
                 src: song.preview,
                 cover: song.album.cover_medium
             }));
-
             index = 0;
             loadSong();
             resolve();
@@ -116,16 +106,16 @@ function fetchSongs(query="pop"){
     });
 }
 
-/* ================= MODE ================= */
+/* MODE */
 function loadTenxi(){
     fetchSongs("tenxi");
 }
 
-function loadJpop(){
-    fetchSongs("heiakim lowmana jpop");
+function loadHeiakim(){
+    fetchSongs("heiakim");
 }
 
-/* ================= LOAD ================= */
+/* LOAD */
 function loadSong(){
     let song = playlist[index];
     if(!song) return;
@@ -133,11 +123,9 @@ function loadSong(){
     audio.src = song.src;
     title.innerText = song.title;
     cover.src = song.cover;
-
-    localStorage.setItem("lastSong", index);
 }
 
-/* ================= CONTROL ================= */
+/* CONTROL */
 function togglePlay(){
     if(audio.paused){
         audio.play();
@@ -149,11 +137,10 @@ function togglePlay(){
 }
 
 function next(){
-    if(shuffle){
-        index = Math.floor(Math.random()*playlist.length);
-    } else {
-        index = (index+1)%playlist.length;
-    }
+    index = shuffle
+        ? Math.floor(Math.random()*playlist.length)
+        : (index+1)%playlist.length;
+
     loadSong();
     audio.play();
 }
@@ -164,14 +151,14 @@ function prev(){
     audio.play();
 }
 
-/* ================= AI ================= */
+/* AI */
 function recommend(){
     let current = playlist[index]?.title || "pop";
     status.innerText = "🤖 Rekomendasi: " + current;
     fetchSongs(current);
 }
 
-/* ================= PROGRESS ================= */
+/* PROGRESS */
 audio.addEventListener("timeupdate", ()=>{
     let percent = (audio.currentTime/audio.duration)*100;
     bar.style.width = percent + "%";
@@ -183,7 +170,7 @@ progress.onclick = (e)=>{
     audio.currentTime = percent * audio.duration;
 };
 
-/* ================= AUTO NEXT ================= */
+/* AUTO NEXT */
 audio.addEventListener("ended", ()=>{
     if(repeat){
         audio.currentTime = 0;
@@ -193,15 +180,11 @@ audio.addEventListener("ended", ()=>{
     }
 });
 
-/* ================= BUTTON ================= */
-document.getElementById("shuffle").onclick = ()=>{
-    shuffle=!shuffle;
-};
-document.getElementById("repeat").onclick = ()=>{
-    repeat=!repeat;
-};
+/* BUTTON */
+document.getElementById("shuffle").onclick = ()=> shuffle=!shuffle;
+document.getElementById("repeat").onclick = ()=> repeat=!repeat;
 
-/* ================= HAMMER ================= */
+/* HAMMER */
 const mc = new Hammer(document.body);
 mc.get('swipe').set({ direction: Hammer.DIRECTION_ALL });
 mc.get('pinch').set({ enable:true });
@@ -213,13 +196,13 @@ mc.on("swipeleft", next);
 mc.on("swiperight", prev);
 
 mc.on("swipeup", ()=>{
-    status.innerText = "🎧 Mode TENXI";
+    status.innerText = "🎧 TENXI";
     loadTenxi();
 });
 
 mc.on("swipedown", ()=>{
-    status.innerText = "🇯🇵 Mode JPOP";
-    loadJpop();
+    status.innerText = "🎌 HEIAKIM";
+    loadHeiakim();
 });
 
 mc.on("pinch", (ev)=>{
@@ -230,7 +213,7 @@ mc.on("pinch", (ev)=>{
 
 mc.on("press", recommend);
 
-/* ================= VOICE ================= */
+/* VOICE */
 document.getElementById("voice").onclick = ()=>{
     if(!('webkitSpeechRecognition' in window)){
         alert("Voice tidak didukung");
@@ -245,29 +228,19 @@ document.getElementById("voice").onclick = ()=>{
 
     rec.onresult = (e)=>{
         let cmd = e.results[0][0].transcript.toLowerCase();
-        status.innerText = cmd;
 
         if(cmd.includes("play")) audio.play();
         if(cmd.includes("pause")) audio.pause();
         if(cmd.includes("next")) next();
         if(cmd.includes("back")) prev();
         if(cmd.includes("recommend")) recommend();
-
         if(cmd.includes("tenxi")) loadTenxi();
-        if(cmd.includes("jpop") || cmd.includes("anime")) loadJpop();
+        if(cmd.includes("heiakim")) loadHeiakim();
     };
 };
 
-/* ================= START ================= */
-async function start(){
-    await fetchSongs("tenxi");
-
-    if(playlist.length === 0){
-        status.innerText = "⚠️ Tenxi tidak ada → pakai jpop";
-        await fetchSongs("jpop");
-    }
-}
-start();
+/* START */
+fetchSongs("tenxi");
 </script>
 
 </body>
