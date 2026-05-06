@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gesture Music Player</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+
+<style>
+body {
+    margin:0;
+    font-family:sans-serif;
+    background:#121212;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:100vh;
+    text-align:center;
+}
+
+#app {
+    padding:20px;
+}
+
+.title { font-size:1.8rem; }
+.status { margin-top:10px; color:gray; }
+.big { margin-top:20px; font-size:1.4rem; }
+
+.pulse {
+    transform:scale(1.05);
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+    <div class="title">🎵 Gesture Music Player</div>
+    <div id="song">Song: -</div>
+    <div class="big" id="action">Interaksi dulu untuk mulai</div>
+    <div class="status">Swipe | Double Tap | Pinch</div>
+</div>
+
+<!-- AUDIO -->
+<audio id="audio"></audio>
+
+<script>
+const app = document.getElementById("app");
+const action = document.getElementById("action");
+const songLabel = document.getElementById("song");
+const audio = document.getElementById("audio");
+
+/* Playlist (bebas ganti) */
+const playlist = [
+    {
+        title: "SoundHelix 1",
+        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+    },
+    {
+        title: "SoundHelix 2",
+        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+    }
+];
+
+let index = 0;
+let started = false;
+
+/* Load lagu */
+function loadSong() {
+    audio.src = playlist[index].src;
+    songLabel.innerText = "Song: " + playlist[index].title;
+}
+
+loadSong();
+
+/* Hammer */
+const mc = new Hammer(app);
+mc.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL });
+mc.get('pinch').set({ enable:true });
+mc.get('tap').set({ taps:2 });
+
+/* START (biar lolos autoplay restriction) */
+app.addEventListener("click", ()=>{
+    if(!started){
+        audio.play();
+        started = true;
+        action.innerText = "▶️ Playing";
+    }
+});
+
+/* PLAY / PAUSE */
+mc.on("tap", ()=>{
+    if(audio.paused){
+        audio.play();
+        action.innerText = "▶️ Playing";
+    } else {
+        audio.pause();
+        action.innerText = "⏸ Paused";
+    }
+    pulse();
+});
+
+/* NEXT */
+mc.on("swipeleft", ()=>{
+    index = (index + 1) % playlist.length;
+    loadSong();
+    audio.play();
+    action.innerText = "⏭ Next Song";
+    pulse();
+});
+
+/* PREV */
+mc.on("swiperight", ()=>{
+    index = (index - 1 + playlist.length) % playlist.length;
+    loadSong();
+    audio.play();
+    action.innerText = "⏮ Previous Song";
+    pulse();
+});
+
+/* VOLUME CONTROL */
+mc.on("pinch", (ev)=>{
+    let vol = audio.volume + (ev.scale - 1) * 0.1;
+    audio.volume = Math.min(1, Math.max(0, vol));
+    action.innerText = "🔊 Volume: " + Math.round(audio.volume * 100) + "%";
+});
+
+/* AUTO NEXT */
+audio.addEventListener("ended", ()=>{
+    index = (index + 1) % playlist.length;
+    loadSong();
+    audio.play();
+});
+
+/* VISUAL */
+function pulse(){
+    app.classList.add("pulse");
+    setTimeout(()=>app.classList.remove("pulse"),200);
+}
+</script>
+
+</body>
+</html>
