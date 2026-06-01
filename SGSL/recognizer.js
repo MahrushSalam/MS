@@ -16,7 +16,7 @@ recognize(points){
  let h=Math.max(...ys)-Math.min(...ys);
 
  if(Math.abs(first.x-last.x)<40 && Math.abs(first.y-last.y)<40)
-   return "C";
+   return "O";
 
  return ["M","T","W"][Math.floor(Math.random()*3)];
 }
