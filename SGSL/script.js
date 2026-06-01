@@ -69,7 +69,7 @@ document.getElementById('clearBtn').onclick=()=>{
 
 function launch(g){
  const map={
-  C:'https://webcamtests.com',
+  O:'https://webcamtests.com',
   M:'https://music.youtube.com',
   S:'https://store.steampowered.com',
   T:'https://web.telegram.org',
