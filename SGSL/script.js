@@ -70,7 +70,7 @@ document.getElementById('clearBtn').onclick=()=>{
 function launch(g){
  const map={
   O:'https://webcamtests.com',
-  M:'https://music.youtube.com',
+  M:'https://open.spotify.com',
   S:'https://store.steampowered.com',
   T:'https://web.telegram.org',
   W:'https://web.whatsapp.com'
