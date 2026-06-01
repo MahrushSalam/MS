@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Smart Gesture Shortcut Launcher</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<h1>Smart Gesture Shortcut Launcher</h1>
+<p>Gambar gesture C, M, S, T, W, V pada canvas.</p>
+</header>
+
+<div class="container">
+<div class="left">
+<canvas id="canvas"></canvas>
+<div class="controls">
+<button id="clearBtn">Clear</button>
+<button id="saveBtn">Tambah Shortcut</button>
+</div>
+</div>
+
+<div class="right">
+<h3>Hasil</h3>
+<div id="result">Belum ada gesture</div>
+
+<h3>Statistik</h3>
+<div id="stats"></div>
+
+<h3>Gesture</h3>
+<ul>
+<li>C = Camera</li>
+<li>M = Music</li>
+<li>S = Steam</li>
+<li>T = Telegram</li>
+<li>W = WhatsApp</li>
+<li>V = Voice</li>
+</ul>
+</div>
+</div>
+
+<script src="recognizer.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
